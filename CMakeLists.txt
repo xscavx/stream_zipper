@@ -1,10 +1,12 @@
 cmake_minimum_required(VERSION 3.8)
 
 project(
-  stream_zipper
+  stream_zip
   VERSION 1.0
   LANGUAGES CXX
 )
 
 add_subdirectory(src)
-# add_subdirectory(tests)
+
+include(CTest)
+add_subdirectory(tests)
