@@ -9,11 +9,15 @@ public:
    using byte_type = Bytef;
 
    explicit zipbuf(std::ostream &out_stream, int compression_level = Z_DEFAULT_COMPRESSION)
-      : out_stream_(out_stream)
+      : out_stream_{out_stream}
+      , compression_level_{compression_level}
+      , was_deflate_init_{false}
    {
-      deflate_init(deflate_state_, compression_level);
-      out_buffer_prepare_for_deflate(deflate_state_);
       in_buffer_prepare_for_input();
+   }
+
+   ~zipbuf() {
+      deflate_end(deflate_state_);
    }
 
    int_type overflow(int_type c) override {
@@ -38,32 +42,52 @@ public:
       return 0;
    }
 
-   void deflate_init(z_stream &stream, int compression_level) {
-      stream.zalloc = Z_NULL;
-      stream.zfree = Z_NULL;
-      stream.opaque = Z_NULL;
-      deflateInit(&stream, compression_level);
+   bool deflate_init(z_stream &stream, int compression_level) {
+      if (!was_deflate_init_) {
+         stream.zalloc = Z_NULL;
+         stream.zfree = Z_NULL;
+         stream.opaque = Z_NULL;
+         deflateInit(&stream, compression_level);
+         was_deflate_init_ = true;
+         return true;
+      }
+      return false;
+   }
+
+   void deflate_end(z_stream &stream) {
+      if (was_deflate_init_) {
+         deflateEnd(&stream);
+         was_deflate_init_ = false;
+      }
+   }
+
+   bool check_out_buffer_overflow() {
+      return deflate_state_.avail_out == 0;
+   }
+
+   bool check_out_buffer_not_empty() {
+      return (OUT_BUFFER_BYTES - deflate_state_.avail_out) > 0;
    }
 
    bool input_buffer_deflate(int flush) {
+      if (deflate_init(deflate_state_, compression_level)) {
+         out_buffer_prepare_for_deflate(deflate_state_);
+      }
       in_buffer_prepare_for_deflate(deflate_state_);
-      int last_deflate_status_code{Z_OK};
 
+      int last_deflate_status_code{Z_OK};
       while (deflate_state_.avail_in > 0 && last_deflate_status_code == Z_OK) {
          last_deflate_status_code = deflate(&deflate_state_, flush);
 
          if (last_deflate_status_code == Z_OK) {
-            bool const out_buffer_overflow = deflate_state_.avail_out == 0;
-            if (out_buffer_overflow) {
+            if (check_out_buffer_overflow()) {
                out_buffer_write_to_ostream();
                out_buffer_prepare_for_deflate(deflate_state_);
             }
          }
       }
 
-      bool const out_buffer_has_data = (
-            OUT_BUFFER_BYTES - deflate_state_.avail_out) > 0;
-      if (out_buffer_has_data) {
+      if (check_out_buffer_not_empty()) {
          out_buffer_write_to_ostream();
          out_buffer_prepare_for_deflate(deflate_state_);
       }
@@ -79,12 +103,18 @@ public:
 
    void in_buffer_prepare_for_deflate(z_stream &stream) {
       stream.next_in = reinterpret_cast<byte_type*>(pbase());
-      stream.avail_in = static_cast<uInt>((pptr() - pbase()) * CHAR_TYPE_SIZE);
+      stream.avail_in = static_cast<uInt>(
+         (pptr() - pbase()) * CHAR_TYPE_SIZE
+      );
+   }
+
+   auto get_out_buffer_bytes_count() {
+      return OUT_BUFFER_BYTES - deflate_state_.avail_out;
    }
 
    void out_buffer_prepare_for_deflate(z_stream &stream) {
       auto [full_chars, remainder] = std::lldiv(
-         OUT_BUFFER_BYTES - deflate_state_.avail_out,
+         get_out_buffer_bytes_count(),
          CHAR_TYPE_SIZE
       );
       // copy not full char of last deflate to begin of buffer
@@ -96,23 +126,27 @@ public:
    }
 
    void out_buffer_write_to_ostream() {
-      auto const last_deflate_whole_chars_count = static_cast<std::streamsize>(
-            (OUT_BUFFER_BYTES - deflate_state_.avail_out) / CHAR_TYPE_SIZE);
-      out_stream_.write(out_buffer_.data(), last_deflate_whole_chars_count);
+      auto const out_buffer_chars = static_cast<std::streamsize>(
+         get_out_buffer_bytes_count() / CHAR_TYPE_SIZE
+      );
+      out_stream_.write(out_buffer_.data(), out_buffer_chars);
    }
 
    void zflush() {
       sync();
       input_buffer_deflate(Z_FINISH);
       out_stream_.flush();
-	   deflateEnd(&deflate_state_);
+      deflate_end(deflate_state_);
    }
 
 public:
-   std::array<char_type, IN_BUFFER_SIZE> in_buffer_{};
-   std::array<char_type, OUT_BUFFER_SIZE> out_buffer_{};
-   z_stream deflate_state_{};
+   std::array<char_type, IN_BUFFER_SIZE> in_buffer_;
+   std::array<char_type, OUT_BUFFER_SIZE> out_buffer_;
+   z_stream deflate_state_;
    std::ostream &out_stream_;
+   bool was_deflate_init_;
+   int compression_level_;
+
    static constexpr auto CHAR_TYPE_SIZE{sizeof(char_type)};
    static constexpr auto IN_BUFFER_BYTES = IN_BUFFER_SIZE * CHAR_TYPE_SIZE;
    static constexpr auto OUT_BUFFER_BYTES = OUT_BUFFER_SIZE * CHAR_TYPE_SIZE;
