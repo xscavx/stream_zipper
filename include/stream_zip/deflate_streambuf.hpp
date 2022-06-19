@@ -25,14 +25,19 @@ protected:
 private:
      bool deflate_init();
      void deflate_end();
+
      bool check_out_buffer_not_empty();
      bool check_out_buffer_overflow();
+
      bool input_buffer_deflate(int flush);
+
      void in_buffer_prepare_for_deflate();
      void in_buffer_prepare_for_input();
+
    size_t get_out_buffer_bytes_count();
      void out_buffer_prepare_for_deflate();
      void out_buffer_write_to_ostream();
+     void out_buffer_write_remainder_to_ostream();
    
 private:
    std::array<char_type, BUFFER_SIZE> in_buffer_;
@@ -65,6 +70,7 @@ template<size_t BUFFER_SIZE>
 void zipstreambuf<BUFFER_SIZE>::zflush() {
    sync();
    input_buffer_deflate(Z_FINISH);
+   out_buffer_write_remainder_to_ostream();
    out_stream_.flush();
    deflate_end();
 }
@@ -208,6 +214,14 @@ void zipstreambuf<BUFFER_SIZE>::out_buffer_write_to_ostream() {
       get_out_buffer_bytes_count() / CHAR_TYPE_SIZE
    );
    out_stream_.write(out_buffer_.data(), out_buffer_chars);
+}
+
+template<size_t BUFFER_SIZE>
+void zipstreambuf<BUFFER_SIZE>::out_buffer_write_remainder_to_ostream() {
+   // It would be great to zero bytes that are not overlapped with the remainder
+   if (get_out_buffer_bytes_count()) {
+      out_stream_.write(out_buffer_.data(), 1);
+   }
 }
 
 }
