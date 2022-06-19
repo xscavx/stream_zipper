@@ -7,29 +7,55 @@
 #include <stream_zip/deflate_streambuf.hpp>
 
 
-TEST_CASE( "Deflate streambuf simple test", "[main]" ) {
-  static constexpr std::string_view string_in{"test string: zip me please"};
-  static constexpr std::string_view string_in2{"second part of the party"};
+inline constexpr size_t BUF_SIZE{16536};
+inline constexpr std::string_view string_to_deflate{"test string: zip me please"};
 
-  static constexpr auto input_iterations = 100;
-  static constexpr auto split_to_buffers = 3;
-  static constexpr auto buf_size = (string_in.size() * input_iterations
-                                    / split_to_buffers) + 1;
+TEST_CASE( "Deflate streambuf no compression size", "[main]" ) {
+  static constexpr size_t iterations = 5;
 
-  std::cout << "source string:\n" << string_in << std::endl;
-  std::cout << "final string:\n";
   std::ostringstream output{};
+  zstream::zipstreambuf<BUF_SIZE> zsbuf{output, Z_NO_COMPRESSION};
+  std::ostream zip_output(&zsbuf);
 
-  {
-    zstream::zipstreambuf<buf_size> zsbuf{output, Z_NO_COMPRESSION};
-    std::ostream zip_output(&zsbuf);
-    for (int i = 0; i < input_iterations; ++i) {
-      zip_output << string_in << " ";
-    }
-    zsbuf.zflush();
+  for (int i = 0; i < iterations; ++i) {
+    zip_output << string_to_deflate;
   }
+  zsbuf.zflush();
 
-  auto const str = output.str();
-  std::cout << "[" << str << "]" << std::endl;
-  REQUIRE(false);
+  REQUIRE(output.str().size() >= string_to_deflate.size() * iterations);
+}
+
+TEST_CASE( "Deflate streambuf best compression size", "[main]" ) {
+  static constexpr size_t iterations = 5;
+
+  std::ostringstream output{};
+  zstream::zipstreambuf<BUF_SIZE> zsbuf{output, Z_BEST_COMPRESSION};
+  std::ostream zip_output(&zsbuf);
+
+  for (int i = 0; i < iterations; ++i) {
+    zip_output << string_to_deflate;
+  }
+  zsbuf.zflush();
+
+  REQUIRE(output.str().size() < string_to_deflate.size() * iterations);
+}
+
+TEST_CASE( "Deflate streambuf no compression double flush", "[main]" ) {
+  static constexpr std::string_view another_string_to_deflate{"second part of the party"};
+
+  std::ostringstream output{};
+  zstream::zipstreambuf<BUF_SIZE> zsbuf{output, Z_NO_COMPRESSION};
+  std::ostream zip_output(&zsbuf);
+
+  zip_output << string_to_deflate;
+  zsbuf.zflush();
+
+  auto found_idx = output.str().find(string_to_deflate);
+  REQUIRE(found_idx != std::string::npos);
+
+  zip_output << another_string_to_deflate;
+  zsbuf.zflush();
+
+  found_idx = output.str().find(another_string_to_deflate);
+  REQUIRE(found_idx != std::string::npos);
 }
