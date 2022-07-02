@@ -9,18 +9,18 @@
 namespace zstream {
 
 template<size_t BUFFER_SIZE>
-class zipstreambuf : public std::streambuf {
+class zipstreambuf final : public std::streambuf {
 public:
    using byte_type = Bytef;
 
-   zipstreambuf(std::ostream &out_stream,
-                int compression_level = Z_DEFAULT_COMPRESSION);
-   ~zipstreambuf();
+           zipstreambuf(std::ostream &out_stream,
+                        int compression_level = Z_DEFAULT_COMPRESSION);
+   virtual ~zipstreambuf();
    void zflush();
 
 protected:
-   int_type overflow(int_type c) override;
-   int_type sync() override;
+   virtual int_type overflow(int_type c) override;
+   virtual int_type sync() override;
 
 private:
      bool deflate_init();
@@ -39,7 +39,6 @@ private:
      void out_buffer_write_to_ostream();
      void out_buffer_write_remainder_to_ostream();
    
-private:
    std::array<char_type, BUFFER_SIZE> in_buffer_;
    std::array<char_type, BUFFER_SIZE> out_buffer_;
    z_stream deflate_state_;
