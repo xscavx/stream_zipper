@@ -1,5 +1,6 @@
 #ifndef DEFLATE_STREAMBUF_HPP
 #define DEFLATE_STREAMBUF_HPP
+
 #include <array>
 #include <sstream>
 #include <zlib.h>
@@ -28,15 +29,15 @@ private:
   bool deflate_init();
   void deflate_end();
 
-  bool check_out_buffer_not_empty();
-  bool check_out_buffer_overflow();
+  bool check_out_buffer_not_empty() const;
+  bool check_out_buffer_overflow() const;
 
   bool input_buffer_deflate(int flush);
 
   void in_buffer_prepare_for_deflate();
   void in_buffer_prepare_for_input();
 
-  size_t get_out_buffer_bytes_count();
+  size_t get_out_buffer_bytes_count() const;
   void out_buffer_prepare_for_deflate();
   void out_buffer_write_to_ostream();
   void out_buffer_write_remainder_to_ostream();
@@ -123,12 +124,12 @@ template <size_t BUFFER_SIZE> void zipstreambuf<BUFFER_SIZE>::deflate_end() {
 }
 
 template <size_t BUFFER_SIZE>
-bool zipstreambuf<BUFFER_SIZE>::check_out_buffer_not_empty() {
+bool zipstreambuf<BUFFER_SIZE>::check_out_buffer_not_empty() const {
   return (OUT_BUFFER_TOTAL_BYTES - deflate_state_.avail_out) > 0;
 }
 
 template <size_t BUFFER_SIZE>
-bool zipstreambuf<BUFFER_SIZE>::check_out_buffer_overflow() {
+bool zipstreambuf<BUFFER_SIZE>::check_out_buffer_overflow() const {
   return deflate_state_.avail_out == 0;
 }
 
@@ -175,7 +176,7 @@ void zipstreambuf<BUFFER_SIZE>::in_buffer_prepare_for_input() {
 }
 
 template <size_t BUFFER_SIZE>
-size_t zipstreambuf<BUFFER_SIZE>::get_out_buffer_bytes_count() {
+size_t zipstreambuf<BUFFER_SIZE>::get_out_buffer_bytes_count() const {
   if (deflate_state_.next_out != nullptr) {
     return OUT_BUFFER_TOTAL_BYTES - deflate_state_.avail_out;
   }
