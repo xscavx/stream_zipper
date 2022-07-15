@@ -1,16 +1,16 @@
 #define CATCH_CONFIG_MAIN
 
+#include <catch2/catch.hpp>
 #include <iostream>
 #include <sstream>
-#include <string>
-#include <catch2/catch.hpp>
 #include <stream_zip/deflate_streambuf.hpp>
-
+#include <string>
 
 inline constexpr size_t BUF_SIZE{16536};
-inline constexpr std::string_view string_to_deflate{"test string: zip me please"};
+inline constexpr std::string_view string_to_deflate{
+    "test string: zip me please"};
 
-TEST_CASE( "Deflate streambuf no compression size", "[main]" ) {
+TEST_CASE("Deflate streambuf no compression size", "[main]") {
   static constexpr size_t iterations = 5;
 
   std::ostringstream output{};
@@ -25,7 +25,7 @@ TEST_CASE( "Deflate streambuf no compression size", "[main]" ) {
   REQUIRE(output.str().size() >= string_to_deflate.size() * iterations);
 }
 
-TEST_CASE( "Deflate streambuf best compression size", "[main]" ) {
+TEST_CASE("Deflate streambuf best compression size", "[main]") {
   static constexpr size_t iterations = 5;
 
   std::ostringstream output{};
@@ -40,8 +40,9 @@ TEST_CASE( "Deflate streambuf best compression size", "[main]" ) {
   REQUIRE(output.str().size() < string_to_deflate.size() * iterations);
 }
 
-TEST_CASE( "Deflate streambuf no compression double flush", "[main]" ) {
-  static constexpr std::string_view another_string_to_deflate{"second part of the party"};
+TEST_CASE("Deflate streambuf no compression double flush", "[main]") {
+  static constexpr std::string_view another_string_to_deflate{
+      "second part of the party"};
 
   std::ostringstream output{};
   zstream::zipstreambuf<BUF_SIZE> zsbuf{output, Z_NO_COMPRESSION};
@@ -49,7 +50,6 @@ TEST_CASE( "Deflate streambuf no compression double flush", "[main]" ) {
 
   zip_output << string_to_deflate;
   zsbuf.zflush();
-
   auto found_idx = output.str().find(string_to_deflate);
   REQUIRE(found_idx != std::string::npos);
 
