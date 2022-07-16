@@ -14,30 +14,31 @@ public:
   explicit zipstreambuf(std::ostream &out_stream,
                         int compression_level = Z_DEFAULT_COMPRESSION);
   ~zipstreambuf() override;
+
   zipstreambuf(zipstreambuf const &orig) = delete;
   zipstreambuf(zipstreambuf &&orig) = delete;
-  zipstreambuf &operator=(zipstreambuf const &orig) = delete;
-  zipstreambuf &operator=(zipstreambuf &&orig) = delete;
+  auto operator=(zipstreambuf const &orig) -> zipstreambuf & = delete;
+  auto operator=(zipstreambuf &&orig) -> zipstreambuf & = delete;
 
   void zflush();
 
 protected:
-  int_type overflow(int_type chr) override;
-  int_type sync() override;
+  auto overflow(int_type chr) -> int_type override;
+  auto sync() -> int_type override;
 
 private:
-  bool deflate_init();
+  auto deflate_init() -> bool;
   void deflate_end();
 
-  [[nodiscard]] bool check_out_buffer_not_empty() const;
-  [[nodiscard]] bool check_out_buffer_overflow() const;
+  [[nodiscard]] auto check_out_buffer_not_empty() const -> bool;
+  [[nodiscard]] auto check_out_buffer_overflow() const -> bool;
 
-  bool input_buffer_deflate(int flush);
+  auto input_buffer_deflate(int flush) -> bool;
 
   void in_buffer_prepare_for_deflate();
   void in_buffer_prepare_for_input();
 
-  [[nodiscard]] size_t get_out_buffer_bytes_count() const;
+  [[nodiscard]] auto get_out_buffer_bytes_count() const -> size_t;
   void out_buffer_prepare_for_deflate();
   void out_buffer_write_to_ostream();
   void out_buffer_write_remainder_to_ostream();
@@ -73,7 +74,8 @@ template <size_t BUFFER_SIZE> void zipstreambuf<BUFFER_SIZE>::zflush() {
 }
 
 template <size_t BUFFER_SIZE>
-std::streambuf::int_type zipstreambuf<BUFFER_SIZE>::overflow(int_type chr) {
+auto zipstreambuf<BUFFER_SIZE>::overflow(int_type chr)
+    -> std::streambuf::int_type {
   if (pptr() > pbase()) {
     if (!input_buffer_deflate(Z_NO_FLUSH)) {
       return traits_type::eof();
@@ -91,7 +93,7 @@ std::streambuf::int_type zipstreambuf<BUFFER_SIZE>::overflow(int_type chr) {
 }
 
 template <size_t BUFFER_SIZE>
-std::streambuf::int_type zipstreambuf<BUFFER_SIZE>::sync() {
+auto zipstreambuf<BUFFER_SIZE>::sync() -> std::streambuf::int_type {
   auto const chr = overflow(traits_type::eof());
   if (chr == traits_type::eof()) {
     return -1;
@@ -99,7 +101,8 @@ std::streambuf::int_type zipstreambuf<BUFFER_SIZE>::sync() {
   return 0;
 }
 
-template <size_t BUFFER_SIZE> bool zipstreambuf<BUFFER_SIZE>::deflate_init() {
+template <size_t BUFFER_SIZE>
+auto zipstreambuf<BUFFER_SIZE>::deflate_init() -> bool {
   if (!was_deflate_init_) {
     deflate_state_.zalloc = Z_NULL;
     deflate_state_.zfree = Z_NULL;
@@ -125,17 +128,17 @@ template <size_t BUFFER_SIZE> void zipstreambuf<BUFFER_SIZE>::deflate_end() {
 }
 
 template <size_t BUFFER_SIZE>
-bool zipstreambuf<BUFFER_SIZE>::check_out_buffer_not_empty() const {
+auto zipstreambuf<BUFFER_SIZE>::check_out_buffer_not_empty() const -> bool {
   return (OUT_BUFFER_TOTAL_BYTES - deflate_state_.avail_out) > 0;
 }
 
 template <size_t BUFFER_SIZE>
-bool zipstreambuf<BUFFER_SIZE>::check_out_buffer_overflow() const {
+auto zipstreambuf<BUFFER_SIZE>::check_out_buffer_overflow() const -> bool {
   return deflate_state_.avail_out == 0;
 }
 
 template <size_t BUFFER_SIZE>
-bool zipstreambuf<BUFFER_SIZE>::input_buffer_deflate(int flush) {
+auto zipstreambuf<BUFFER_SIZE>::input_buffer_deflate(int flush) -> bool {
   if (deflate_init()) {
     out_buffer_prepare_for_deflate();
   }
@@ -178,7 +181,7 @@ void zipstreambuf<BUFFER_SIZE>::in_buffer_prepare_for_input() {
 }
 
 template <size_t BUFFER_SIZE>
-size_t zipstreambuf<BUFFER_SIZE>::get_out_buffer_bytes_count() const {
+auto zipstreambuf<BUFFER_SIZE>::get_out_buffer_bytes_count() const -> size_t {
   if (deflate_state_.next_out != nullptr) {
     return OUT_BUFFER_TOTAL_BYTES - deflate_state_.avail_out;
   }
@@ -201,7 +204,7 @@ void zipstreambuf<BUFFER_SIZE>::out_buffer_prepare_for_deflate() {
     out_buffer_[0] = out_buffer_[full_chars];
   }
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-  auto *casted_buffer = reinterpret_cast<byte_type *>(out_buffer_.data());
+  auto *const casted_buffer = reinterpret_cast<byte_type *>(out_buffer_.data());
   deflate_state_.next_out = casted_buffer + remainder;
   deflate_state_.avail_out =
       static_cast<uInt>(OUT_BUFFER_TOTAL_BYTES - remainder);
