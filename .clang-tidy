@@ -1,0 +1,2 @@
+Checks: '*,-llvmlibc-*,-fuchsia-*,-modernize-*,-altera-*'
+HeaderFilterRegex: '.*'

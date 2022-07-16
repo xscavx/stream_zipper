@@ -1,5 +1,5 @@
-#ifndef DEFLATE_STREAMBUF_HPP
-#define DEFLATE_STREAMBUF_HPP
+#ifndef STREAM_ZIP_DEFLATE_STREAMBUF_HPP
+#define STREAM_ZIP_DEFLATE_STREAMBUF_HPP
 
 #include <array>
 #include <sstream>
@@ -11,9 +11,9 @@ template <size_t BUFFER_SIZE> class zipstreambuf final : public std::streambuf {
 public:
   using byte_type = Bytef;
 
-  zipstreambuf(std::ostream &out_stream,
-               int compression_level = Z_DEFAULT_COMPRESSION);
-  virtual ~zipstreambuf();
+  explicit zipstreambuf(std::ostream &out_stream,
+                        int compression_level = Z_DEFAULT_COMPRESSION);
+  ~zipstreambuf() override;
   zipstreambuf(zipstreambuf const &orig) = delete;
   zipstreambuf(zipstreambuf &&orig) = delete;
   zipstreambuf &operator=(zipstreambuf const &orig) = delete;
@@ -22,8 +22,8 @@ public:
   void zflush();
 
 protected:
-  virtual int_type overflow(int_type c) override;
-  virtual int_type sync() override;
+  int_type overflow(int_type chr) override;
+  int_type sync() override;
 
 private:
   bool deflate_init();
@@ -44,9 +44,9 @@ private:
 
   std::array<char_type, BUFFER_SIZE> in_buffer_;
   std::array<char_type, BUFFER_SIZE> out_buffer_;
-  z_stream deflate_state_;
+  z_stream deflate_state_{};
   std::ostream &out_stream_;
-  bool was_deflate_init_;
+  bool was_deflate_init_{false};
   int compression_level_;
 
   static constexpr auto CHAR_TYPE_SIZE{sizeof(char_type)};
@@ -56,8 +56,7 @@ private:
 template <size_t BUFFER_SIZE>
 zipstreambuf<BUFFER_SIZE>::zipstreambuf(std::ostream &out_stream,
                                         int compression_level)
-    : out_stream_{out_stream}, compression_level_{compression_level},
-      was_deflate_init_{false} {
+    : out_stream_{out_stream}, compression_level_{compression_level} {
   in_buffer_prepare_for_input();
 }
 
@@ -74,17 +73,18 @@ template <size_t BUFFER_SIZE> void zipstreambuf<BUFFER_SIZE>::zflush() {
 }
 
 template <size_t BUFFER_SIZE>
-std::streambuf::int_type zipstreambuf<BUFFER_SIZE>::overflow(int_type c) {
+std::streambuf::int_type zipstreambuf<BUFFER_SIZE>::overflow(int_type chr) {
   if (pptr() > pbase()) {
-    if (!input_buffer_deflate(Z_NO_FLUSH))
+    if (!input_buffer_deflate(Z_NO_FLUSH)) {
       return traits_type::eof();
+    }
   }
 
   // write c if not EOF
-  if (traits_type::not_eof(c)) {
-    *pptr() = traits_type::to_char_type(c);
+  if (traits_type::eq_int_type(chr, traits_type::eof())) {
+    *pptr() = traits_type::to_char_type(chr);
     pbump(1);
-    return c;
+    return chr;
   }
 
   return traits_type::eof();
@@ -92,9 +92,10 @@ std::streambuf::int_type zipstreambuf<BUFFER_SIZE>::overflow(int_type c) {
 
 template <size_t BUFFER_SIZE>
 std::streambuf::int_type zipstreambuf<BUFFER_SIZE>::sync() {
-  auto const c = overflow(traits_type::eof());
-  if (c == traits_type::eof())
+  auto const chr = overflow(traits_type::eof());
+  if (chr == traits_type::eof()) {
     return -1;
+  }
   return 0;
 }
 
@@ -141,7 +142,7 @@ bool zipstreambuf<BUFFER_SIZE>::input_buffer_deflate(int flush) {
   in_buffer_prepare_for_deflate();
 
   int last_deflate_status_code{Z_OK};
-  while ((flush || deflate_state_.avail_in > 0) &&
+  while (((flush != Z_NO_FLUSH) || deflate_state_.avail_in > 0) &&
          last_deflate_status_code == Z_OK) {
     last_deflate_status_code = deflate(&deflate_state_, flush);
 
@@ -164,6 +165,7 @@ bool zipstreambuf<BUFFER_SIZE>::input_buffer_deflate(int flush) {
 
 template <size_t BUFFER_SIZE>
 void zipstreambuf<BUFFER_SIZE>::in_buffer_prepare_for_deflate() {
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
   deflate_state_.next_in = reinterpret_cast<byte_type *>(pbase());
   deflate_state_.avail_in =
       static_cast<uInt>((pptr() - pbase()) * CHAR_TYPE_SIZE);
@@ -198,8 +200,9 @@ void zipstreambuf<BUFFER_SIZE>::out_buffer_prepare_for_deflate() {
   if (remainder != 0) {
     out_buffer_[0] = out_buffer_[full_chars];
   }
-  deflate_state_.next_out =
-      reinterpret_cast<byte_type *>(out_buffer_.data()) + remainder;
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+  auto *casted_buffer = reinterpret_cast<byte_type *>(out_buffer_.data());
+  deflate_state_.next_out = casted_buffer + remainder;
   deflate_state_.avail_out =
       static_cast<uInt>(OUT_BUFFER_TOTAL_BYTES - remainder);
 }
@@ -221,4 +224,4 @@ void zipstreambuf<BUFFER_SIZE>::out_buffer_write_remainder_to_ostream() {
 
 } // namespace zstream
 
-#endif // DEFLATE_STREAMBUF_HPP
+#endif // STREAM_ZIP_DEFLATE_STREAMBUF_HPP
