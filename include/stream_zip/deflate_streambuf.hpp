@@ -29,15 +29,15 @@ private:
   bool deflate_init();
   void deflate_end();
 
-  bool check_out_buffer_not_empty() const;
-  bool check_out_buffer_overflow() const;
+  [[nodiscard]] bool check_out_buffer_not_empty() const;
+  [[nodiscard]] bool check_out_buffer_overflow() const;
 
   bool input_buffer_deflate(int flush);
 
   void in_buffer_prepare_for_deflate();
   void in_buffer_prepare_for_input();
 
-  size_t get_out_buffer_bytes_count() const;
+  [[nodiscard]] size_t get_out_buffer_bytes_count() const;
   void out_buffer_prepare_for_deflate();
   void out_buffer_write_to_ostream();
   void out_buffer_write_remainder_to_ostream();

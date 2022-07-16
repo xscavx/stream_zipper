@@ -1,2 +1,2 @@
-Checks: '*,-llvmlibc-*,-fuchsia-*,-modernize-*,-altera-*'
+Checks: '*,-llvmlibc-*,-fuchsia-*,-altera-*,-modernize-use-trailing-return-type'
 HeaderFilterRegex: '.*'
