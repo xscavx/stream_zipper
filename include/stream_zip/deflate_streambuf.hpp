@@ -14,11 +14,8 @@ public:
   explicit zipstreambuf(std::ostream &out_stream,
                         int compression_level = Z_DEFAULT_COMPRESSION);
   ~zipstreambuf() override;
-
   zipstreambuf(zipstreambuf const &orig) = delete;
-  zipstreambuf(zipstreambuf &&orig) = delete;
   auto operator=(zipstreambuf const &orig) -> zipstreambuf & = delete;
-  auto operator=(zipstreambuf &&orig) -> zipstreambuf & = delete;
 
   void zflush();
 
