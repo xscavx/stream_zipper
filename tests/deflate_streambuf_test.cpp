@@ -63,3 +63,25 @@ TEST_CASE("Deflate streambuf no compression double flush", "[main]") {
   found_idx = output.str().find(another_string_to_deflate);
   REQUIRE(found_idx != std::string::npos);
 }
+
+// NOLINTNEXTLINE
+TEMPLATE_TEST_CASE_SIG("Deflate streambuf no compression extremely small buffer",
+                       "[main]",
+                       ((buffer_size_t BUFSIZE), BUFSIZE),
+                       13,
+                       10,
+                       1) {
+  static constexpr auto iterations = 1000;
+
+  std::ostringstream output;
+  zstream::zipstreambuf<BUFSIZE> zsbuf{output, Z_NO_COMPRESSION};
+
+  std::ostream zip_output(&zsbuf);
+  for (int i = 0; i < iterations; ++i) {
+    zip_output << string_to_deflate;
+  }
+  zsbuf.zflush();
+
+  auto found_idx = output.str().find(string_to_deflate);
+  REQUIRE(found_idx != std::string::npos);
+}

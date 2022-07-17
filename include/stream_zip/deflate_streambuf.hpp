@@ -89,7 +89,7 @@ auto zipstreambuf<BUFFER_SIZE>::overflow(int_type chr) -> std::streambuf::int_ty
     }
   }
   // write c if not EOF
-  if (traits_type::eq_int_type(chr, traits_type::eof())) {
+  if (!traits_type::eq_int_type(chr, traits_type::eof())) {
     *pptr() = traits_type::to_char_type(chr);
     pbump(1);
     return chr;
