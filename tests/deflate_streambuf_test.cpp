@@ -12,7 +12,6 @@
 
 inline constexpr size_t BUF_SIZE{16536};
 inline constexpr std::string_view string_to_deflate{"test string: zip me please"};
-using zstream::buffer_size_t;
 
 TEST_CASE("Deflate streambuf no compression size", "[main]") {
   static constexpr size_t iterations = 5;
@@ -67,7 +66,7 @@ TEST_CASE("Deflate streambuf no compression double flush", "[main]") {
 // NOLINTNEXTLINE
 TEMPLATE_TEST_CASE_SIG("Deflate streambuf no compression extremely small buffer",
                        "[main]",
-                       ((buffer_size_t BUFSIZE), BUFSIZE),
+                       ((zstream::buffer_size_t BUFSIZE), BUFSIZE),
                        13,
                        10,
                        1) {
