@@ -1,0 +1,81 @@
+{
+    "version": 5,
+    "configurePresets": [
+        {
+            "name": "Clang",
+            "hidden": true,
+            "displayName": "Clang 14",
+            "description": "Clang 14.0.4 x86_64-w64-windows-gnu",
+            "binaryDir": "${sourceDir}/build/",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang.exe",
+                "CMAKE_CXX_COMPILER": "clang++.exe",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": true
+            }
+        },
+        {
+            "name": "Release",
+            "inherits": "Clang",
+            "displayName": "Release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "Debug",
+            "inherits": "Clang",
+            "displayName": "Debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "UBSanitizer",
+            "inherits": [
+                "Debug"
+            ],
+            "cacheVariables": {
+                "CMAKE_CXX_FLAGS": "-fsanitize=undefined",
+                "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=undefined"
+            }
+        },
+        {
+            "name": "AddressSanitizer",
+            "inherits": [
+                "Debug"
+            ],
+            "cacheVariables": {
+                "CMAKE_CXX_FLAGS": "-fsanitize=address -fno-omit-frame-pointer",
+                "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=undefined"
+            }
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "Debug",
+            "configurePreset": "Debug",
+            "output": {
+                "outputOnFailure": true
+            },
+            "execution": {
+                "noTestsAction": "error",
+                "stopOnFailure": false
+            }
+        },
+        {
+            "name": "Release",
+            "configurePreset": "Release",
+            "inherits": "Debug"
+        },
+        {
+            "name": "UBSanitizer",
+            "configurePreset": "UBSanitizer",
+            "inherits": "Test"
+        },
+        {
+            "name": "AddressSanitizer",
+            "configurePreset": "AddressSanitizer",
+            "inherits": "Test"
+        }
+    ]
+}
