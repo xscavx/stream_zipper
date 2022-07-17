@@ -7,8 +7,7 @@
 #include <string>
 
 inline constexpr size_t BUF_SIZE{16536};
-inline constexpr std::string_view string_to_deflate{
-    "test string: zip me please"};
+inline constexpr std::string_view string_to_deflate{"test string: zip me please"};
 
 TEST_CASE("Deflate streambuf no compression size", "[main]") {
   static constexpr size_t iterations = 5;
