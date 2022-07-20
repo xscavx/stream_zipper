@@ -8,7 +8,6 @@
             "description": "Clang 14.0.4 x86_64-w64-windows-gnu",
             "binaryDir": "${sourceDir}/build/",
             "cacheVariables": {
-                "CMAKE_C_COMPILER": "clang.exe",
                 "CMAKE_CXX_COMPILER": "clang++.exe",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": true
             }
