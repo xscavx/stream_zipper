@@ -173,8 +173,7 @@ auto zipstreambuf<BUFFER_SIZE>::input_buffer_deflate(int flush) -> bool {
 
 template <buffer_size_t BUFFER_SIZE>
 void zipstreambuf<BUFFER_SIZE>::in_buffer_prepare_for_deflate() {
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-  deflate_state_.next_in = reinterpret_cast<byte_type*>(pbase());
+  deflate_state_.next_in = static_cast<byte_type*>(static_cast<void*>(pbase()));
   assert((pptr() - pbase()) < std::numeric_limits<buffer_size_t>::max() &&
          "Buffer can not be larger than max of buffer_size_t");
   deflate_state_.avail_in =
@@ -210,8 +209,8 @@ void zipstreambuf<BUFFER_SIZE>::out_buffer_prepare_for_deflate() {
   if (remainder != 0) {
     out_buffer_[0] = out_buffer_[full_chars];
   }
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-  auto* const casted_buffer = reinterpret_cast<byte_type*>(out_buffer_.data());
+  auto* const casted_buffer =
+      static_cast<byte_type*>(static_cast<void*>(out_buffer_.data()));
   deflate_state_.next_out = casted_buffer + remainder;
   deflate_state_.avail_out = OUT_BUFFER_TOTAL_BYTES - remainder;
 }
