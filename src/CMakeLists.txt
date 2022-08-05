@@ -1,11 +1,9 @@
-add_library(stream_zip_library ../include/stream_zip/deflate_streambuf.hpp
-                               deflate_streambuf.cpp)
+add_executable(test test.cpp)
 find_package(ZLIB REQUIRED)
-target_link_libraries(stream_zip_library PRIVATE ZLIB::ZLIB)
+target_link_libraries(test PRIVATE ZLIB::ZLIB)
 
-target_include_directories(stream_zip_library PUBLIC ../include)
+target_include_directories(test PUBLIC ../include)
 
-target_compile_features(stream_zip_library PUBLIC cxx_std_17)
-set_target_properties(stream_zip_library PROPERTIES CXX_EXTENSIONS OFF)
-target_compile_options(stream_zip_library PRIVATE -Weverything
-                                                  -Wno-c++98-compat)
+target_compile_features(test PUBLIC cxx_std_17)
+set_target_properties(test PROPERTIES CXX_EXTENSIONS OFF)
+target_compile_options(test PRIVATE -Weverything -Wno-c++98-compat)
